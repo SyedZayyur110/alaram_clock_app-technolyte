@@ -3,12 +3,15 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-
 import 'Screens/AlarmRingingScreen.dart';
 import 'main.dart';
 import 'package:intl/intl.dart';
+
 final flutterlocalNotificationPlugin = FlutterLocalNotificationsPlugin();
-Future<void> initNotifications() async {
+
+Future<void> initNotifications() async
+{
+
   const AndroidInitializationSettings androidInitializationSettings =
   AndroidInitializationSettings('@mipmap/alarm_clock_icon');
 
@@ -17,7 +20,8 @@ Future<void> initNotifications() async {
 
   await flutterlocalNotificationPlugin.initialize(
     initializationSettings,
-    onDidReceiveNotificationResponse: (NotificationResponse response) async {
+    onDidReceiveNotificationResponse: (NotificationResponse response) async
+    {
       navigatorKey.currentState?.push(
         MaterialPageRoute(builder: (_) => const AlarmRingingScreen()),
       );
@@ -74,9 +78,12 @@ Future<void> ShowAlarmNotification(int id , DateTime time, String Description
 }
 
 Future<void>CancelAlarm(int id)
-async {
+async
+{
   //// cancel the notification with id value of zero////
+
   await flutterlocalNotificationPlugin.cancel(id);
+
 }
 
 

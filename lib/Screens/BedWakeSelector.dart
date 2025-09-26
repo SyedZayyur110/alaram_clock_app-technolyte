@@ -22,11 +22,13 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
   double? _lastDragAngle;
 
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     _loadRoutine();
   }
-  Future<void> _loadRoutine() async {
+  Future<void> _loadRoutine() async
+  {
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString('daily_routine');
     if (json != null) {
@@ -41,7 +43,8 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
       });
     }
   }
-  DateTime _nextOccurrence(int hour, int minute) {
+  DateTime _nextOccurrence(int hour, int minute)
+  {
     final now = DateTime.now();
     var scheduled = DateTime(now.year, now.month, now.day, hour, minute);
     if (scheduled.isBefore(now)) {
@@ -50,10 +53,9 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
     return scheduled;
   }
 
-// helper
+                           //////helpers////////
   double _angleFromTime(int h, int m) {
     final minutes = h * 60 + m;
-    // our ring’s 0 rad = 3 o’clock, we want 0 at top, so subtract π/2
     return ((minutes / (24 * 60)) * 2 * math.pi - math.pi / 2) % (2 * math.pi);
   }
 
@@ -117,6 +119,10 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
                   /////Cancel any previous alarms//////
                   await CancelAlarm(100); // Sleep notification
                   await CancelAlarm(101); // Wake notification
+                  await CancelAlarm(102);
+                  await CancelAlarm(103);
+                  await CancelAlarm(104);
+                  await CancelAlarm(105);
 
                   //////Schedule new alarms with updated times////
                   final sleepTime = _nextOccurrence(routine.sleepHour, routine.sleepMinute);
@@ -124,7 +130,15 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
 
                   await ShowAlarmNotification(100, sleepTime, 'Time to sleep 😴');
                   await ShowAlarmNotification(101, wakeTime, 'Time to wake up ⏰');
-
+                  await ShowAlarmNotification(102, wakeTime.add(const Duration(minutes: 15)),
+                      'Drink a glass of water 💧');
+                  await ShowAlarmNotification(103, wakeTime.add(const Duration(hours: 1)),
+                      'Have your breakfast 🍳');
+                  final lunchTime = wakeTime.add(const Duration(hours: 5));
+                  await ShowAlarmNotification(104, lunchTime,
+                      'Time for lunch 🥗');
+                  await ShowAlarmNotification(105, lunchTime.add(const Duration(hours: 5)),
+                      'Time for dinner 🍽️');
                   Navigator.pop(context, routine);
                 },
 
@@ -135,7 +149,8 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
           ],
         ),
       ),
-      body: Column(
+      body:
+      Column(
         children: [
           const SizedBox(height: 80),
           GestureDetector(
@@ -203,17 +218,15 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
     final local = box.globalToLocal(details.globalPosition);
     final angle = _angleFromCenter(center, local);
 
-    /////compute signed smallest delta between last and current pointer angles//////
+    /////computed signed smallest delta between last and current pointer angles//////
 
     final delta = _angleDelta(_lastDragAngle!, angle);
     _lastDragAngle = angle;
 
     setState(() {
       if (draggingStart!) {
-        // update start by the delta (keeps movement 1:1 with finger)
         startAngle = _normalize(startAngle + delta);
       } else {
-        // update end by the delta (same smooth behavior)
         endAngle = _normalize(endAngle + delta);
       }
     });
@@ -226,21 +239,23 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
     return _normalize(a);
   }
 
-  double _normalize(double a) {
-    // wrap angle to [0, 2π)
+  double _normalize(double a)
+  {
+    // wraping th4  angle to [0, 2π)
     while (a < 0) a += 2 * math.pi;
     while (a >= 2 * math.pi) a -= 2 * math.pi;
     return a;
   }
 
-  double _angleDelta(double from, double to) {
-    // smallest signed difference from -> to in range (-π, π]
+  double _angleDelta(double from, double to)
+  {
     double diff = to - from;
     if (diff > math.pi) diff -= 2 * math.pi;
     if (diff < -math.pi) diff += 2 * math.pi;
     return diff;
   }
-  TimeOfDay _timeFromAngle(double angle) {
+  TimeOfDay _timeFromAngle(double angle)
+  {
     final totalMinutes =
         ((_normalize(angle) + math.pi / 2) % (2 * math.pi)) /
             (2 * math.pi) * 24 * 60;
@@ -251,12 +266,14 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
 
 
 
-  double _circularDistance(double a, double b) {
+  double _circularDistance(double a, double b)
+  {
     final diff = (a - b).abs();
     return diff > math.pi ? 2 * math.pi - diff : diff;
   }
 
-  String _formatTime(double angle) {
+  String _formatTime(double angle)
+  {
     final mins = ((_normalize(angle) + math.pi / 2) % (2 * math.pi)) /
         (2 * math.pi) * 24 * 60;
     final h = mins ~/ 60;
@@ -266,15 +283,12 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
     return "${h12.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')} $period";
   }
 
-  String _sleepHours() {
+  String _sleepHours()
+  {
     final startMins = ((_normalize(startAngle) + math.pi / 2) % (2 * math.pi)) /
-        (2 * math.pi) *
-        24 *
-        60;
+        (2 * math.pi) * 24 * 60;
     final endMins = ((_normalize(endAngle) + math.pi / 2) % (2 * math.pi)) /
-        (2 * math.pi) *
-        24 *
-        60;
+        (2 * math.pi) * 24 * 60;
     double diff = endMins - startMins;
     if (diff < 0) diff += 24 * 60;
     return (diff / 60).toStringAsFixed(1);
@@ -282,7 +296,8 @@ class _BedWakeSelectorState extends State<BedWakeSelector> {
 }
 
 ///////////Painter (shows colorful ring, inner ticks, numbers 0/6/12/18)//////////
-class _RingPainter extends CustomPainter {
+class _RingPainter extends CustomPainter
+{
   final double start;
   final double end;
   _RingPainter(this.start, this.end);

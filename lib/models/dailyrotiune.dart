@@ -19,7 +19,9 @@ class Dailyrotiune {
     int? wakeHour,
     int? wakeMinute,
     bool? enabled,
-  }) {
+  })
+
+  {
     return Dailyrotiune(
       sleepHour: sleepHour ?? this.sleepHour,
       sleepMinute: sleepMinute ?? this.sleepMinute,

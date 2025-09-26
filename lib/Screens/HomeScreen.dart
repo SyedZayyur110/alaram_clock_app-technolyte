@@ -1,16 +1,14 @@
 import 'dart:convert';
 import 'package:alarm_clock_app/App_Utils/apputils.dart';
 import 'package:alarm_clock_app/Screens/Alarmset.dart';
-import 'package:alarm_clock_app/Screens/DailyRotiune.dart';
+import 'package:alarm_clock_app/Screens/BedWakeSelector.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../App_Utils/timeutils.dart';
 import '../Notification.dart';
 import '../models/alarm.dart';
 import '../models/dailyrotiune.dart';
-import 'Notifications.dart';
 
 class Homescreen extends StatefulWidget {
   const Homescreen({super.key});
@@ -24,7 +22,6 @@ class _HomescreenState extends State<Homescreen> {
   List<bool> switches = [];
   Dailyrotiune? routine;
 
-  // ---------- Helpers ----------
   DateTime _todayWith(int hour, int minute) {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day, hour, minute);
@@ -46,7 +43,6 @@ class _HomescreenState extends State<Homescreen> {
     await prefs.setString('daily_routine', jsonEncode(r.toJson()));
   }
 
-  // ---------- Lifecycle ----------
   @override
   void initState() {
     super.initState();
@@ -57,17 +53,11 @@ class _HomescreenState extends State<Homescreen> {
   void loadAlarms() async {
     final storedAlarms = await AppUtils.GetAlarm();
     setState(() {
+      storedAlarms.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       alarms = storedAlarms;
-      alarms.sort((a, b) {
-        final aMinutes = a.dateTime.hour * 60 + a.dateTime.minute;
-        final bMinutes = b.dateTime.hour * 60 + b.dateTime.minute;
-        return aMinutes.compareTo(bMinutes);
-      });
-      switches = alarms.map((a) => a.enabled).toList();
     });
   }
 
-  // ---------- Repeat Days Dialog ----------
   void showRepeatDaysDialog(BuildContext context, int index) {
     final alarm = alarms[index];
     final days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -121,16 +111,13 @@ class _HomescreenState extends State<Homescreen> {
     );
   }
 
-  // ---------- Build ----------
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final wakeTime = routine == null
-        ? null
-        : _todayWith(routine!.wakeHour, routine!.wakeMinute);
-    final sleepTime = routine == null
-        ? null
-        : _todayWith(routine!.sleepHour, routine!.sleepMinute);
+    final wakeTime =
+    routine == null ? null : _todayWith(routine!.wakeHour, routine!.wakeMinute);
+    final sleepTime =
+    routine == null ? null : _todayWith(routine!.sleepHour, routine!.sleepMinute);
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -148,21 +135,23 @@ class _HomescreenState extends State<Homescreen> {
               );
               if (newAlarm is Alarm) {
                 setState(() {
-                  alarms.add(newAlarm);
-                  alarms.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+                  alarms.add(newAlarm.copyWith(createdAt: DateTime.now()));
+                  alarms.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
                   switches.add(false);
                 });
                 await AppUtils.SaveAlarm(alarms);
                 await ShowAlarmNotification(
                     newAlarm.id, newAlarm.dateTime, newAlarm.description ?? '');
               }
+
             },
           ),
         ],
       ),
       body: Column(
         children: [
-          // -------- Daily Routine Tile --------
+          // Daily Routine Tile
           Padding(
             padding: const EdgeInsets.all(10.0),
             child: ListTile(
@@ -229,7 +218,7 @@ class _HomescreenState extends State<Homescreen> {
             ),
           ),
 
-          // -------- Alarms List --------
+          // Alarms list
           Expanded(
             child: ListView.builder(
               itemCount: alarms.length,
@@ -244,6 +233,7 @@ class _HomescreenState extends State<Homescreen> {
                     await AppUtils.SaveAlarm(alarms);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
+                        duration: Duration(seconds: 1),
                         content: Text("Alarm deleted",
                             style: TextStyle(color: Colors.black)),
                         backgroundColor: Colors.yellow,
@@ -269,14 +259,10 @@ class _HomescreenState extends State<Homescreen> {
                         );
                         final oldId = alarms[index].id;
                         setState(() {
-                          alarms[index] = Alarm(
-                            id: oldId,
+                          alarms[index] = alarms[index].copyWith(
                             dateTime: updatedDateTime,
-                            description: alarms[index].description,
-                            enabled: true,
+                            createdAt: DateTime.now(), // keep top position
                           );
-                          alarms.sort(
-                                  (a, b) => a.dateTime.compareTo(b.dateTime));
                         });
                         await AppUtils.SaveAlarm(alarms);
                         await CancelAlarm(oldId);
@@ -290,8 +276,7 @@ class _HomescreenState extends State<Homescreen> {
                     child: ListTile(
                       isThreeLine: true,
                       tileColor: Colors.black,
-                      leading:
-                      const Icon(Icons.alarm, color: Colors.white),
+                      leading: const Icon(Icons.alarm, color: Colors.white),
                       title: Text(
                         DateFormat('hh:mm a').format(alarm.dateTime),
                         style:
@@ -307,8 +292,25 @@ class _HomescreenState extends State<Homescreen> {
                         onChanged: (bool value) async {
                           setState(() {
                             alarm.enabled = value;
-                            if (!alarm.enabled) CancelAlarm(alarm.id);
                           });
+                          if (value) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  duration: Duration(seconds: 1),
+                                  content: Text("Alarm on",
+                                      style: TextStyle(color: Colors.black)),
+                                  backgroundColor: Colors.yellow,
+                                ));
+                          } else {
+                            await CancelAlarm(alarm.id);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  duration: Duration(seconds: 1),
+                                  content: Text("Alarm off",
+                                      style: TextStyle(color: Colors.black)),
+                                  backgroundColor: Colors.yellow,
+                                ));
+                          }
                           await AppUtils.SaveAlarm(alarms);
                         },
                       ),

@@ -1,9 +1,9 @@
+import 'package:alarm_clock_app/Screens/HomeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-
 import '../Notification.dart';
 
-class AlarmRingingScreen extends StatefulWidget {
+class AlarmRingingScreen extends Homescreen {
   const AlarmRingingScreen({super.key});
 
   @override
@@ -12,14 +12,15 @@ class AlarmRingingScreen extends StatefulWidget {
 
 class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
   final AudioPlayer player = AudioPlayer();
-
   @override
-  void initState() {
+  void initState()
+  {
     super.initState();
     startRingtone();
   }
 
-  void startRingtone() async {
+  void startRingtone() async
+  {
     await player.setReleaseMode(ReleaseMode.loop);
     await player.play(AssetSource('sounds/sounds.wav'));
   }
@@ -62,7 +63,8 @@ class _AlarmRingingScreenState extends State<AlarmRingingScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.red, fixedSize: const Size(150, 60)),
-                  onPressed: () {
+                  onPressed: ()
+                  {
                     stopRingtone();
                     Navigator.pop(context);
                   },
